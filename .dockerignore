@@ -1,5 +1,6 @@
 Dockerfile
 README.md
+.venv
 *.pyc
 *.pyo
 *.pyd
