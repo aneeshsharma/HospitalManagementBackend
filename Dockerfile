@@ -11,6 +11,7 @@ WORKDIR $APP_HOME
 COPY . ./
 
 # Install production dependencies.
+RUN pip install pipenv
 RUN pipenv install
 
 # Run the web service on container startup. Here we use the gunicorn
