@@ -1,5 +1,5 @@
 import pymysql
-from flask import Flask
+from flask import Flask, jsonify, request
 import os
 
 from dotenv import load_dotenv
@@ -35,6 +35,14 @@ def hello_world():
 def version():
     return "Version {}!".format(data)
 
+@app.route('/api/v1/resources/doctor/getPatient', methods=['POST'])
+def api_addPatient():
+    if 'patientID' in request.args:
+        patientID = int(request.args['id'])
+    else:
+        return "Error 404"
+    patient = {"patientID": patientID}
+    return jsonify(patient) 
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
