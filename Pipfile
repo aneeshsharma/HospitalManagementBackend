@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 flask = "*"
 pymysql = "*"
+python-dotenv = "*"
 
 [dev-packages]
 pylint = "*"
