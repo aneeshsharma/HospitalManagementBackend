@@ -12,15 +12,21 @@ DB_USER = os.environ.get("DB_USER")
 DB_PASS = os.environ.get("DB_PASS")
 DB_NAME = os.environ.get("DB_NAME")
 
-db = pymysql.connect(DB_HOST, DB_USER,
-                     DB_PASS, DB_NAME)
-cursor = db.cursor()
+
+def get_new_cursor():
+    db = pymysql.connect(DB_HOST, DB_USER,
+                         DB_PASS, DB_NAME)
+    cursor = db.cursor()
+    return cursor
+
+
+cur = get_new_cursor()
 
 # execute SQL query using execute() method.
-cursor.execute("SELECT VERSION()")
+cur.execute("SELECT VERSION()")
 
 # Fetch a single row using fetchone() method.
-data = cursor.fetchone()
+data = cur.fetchone()
 print("Database version : %s " % data)
 
 app = Flask(__name__)
@@ -38,18 +44,9 @@ def version():
     return "Version {}!".format(data)
 
 
-@app.route('/api/v1/resources/doctor/getPatient', methods=['POST'])
-def api_addPatient():
-    if 'patientID' in request.args:
-        patientID = int(request.args['id'])
-    else:
-        return "Error 404"
-    patient = {"patientID": patientID}
-    return jsonify(patient)
-
-
 @app.route('/api/v1/resources/common/getDepartment', methods=['GET'])
 def api_getDepartments():
+    cursor = get_new_cursor()
     cursor.execute('SELECT department_name, department_no FROM department')
     data = cursor.fetchall()
     result = []
@@ -63,6 +60,7 @@ def api_getDepartments():
 
 @app.route('/api/v1/resources/doctor/sign-up', methods=['POST'])
 def api_doctor_sign_up():
+    cursor = get_new_cursor()
     req_data = request.get_json()
     print(req_data)
 
@@ -86,6 +84,7 @@ def api_doctor_sign_up():
 
 @app.route('/api/v1/resources/pharmacy/sign-up', methods=['POST'])
 def api_pharmacy_sign_up():
+    cursor = get_new_cursor()
     req_data = request.get_json()
     print(req_data)
 
@@ -109,6 +108,7 @@ def api_pharmacy_sign_up():
 
 @app.route('/api/v1/resources/doctor/login', methods=['GET'])
 def api_doctor_login():
+    cursor = get_new_cursor()
     name = request.args.get('name')
     cursor.execute(f'SELECT doctor_id FROM doctor WHERE name="{name}"')
     row = cursor.fetchone()
@@ -120,6 +120,7 @@ def api_doctor_login():
 
 @app.route('/api/v1/resources/pharmacy/login', methods=['GET'])
 def api_pharmacy_login():
+    cursor = get_new_cursor()
     name = request.args.get('name')
     cursor.execute(f'SELECT pharmacy_id FROM pharmacy WHERE name="{name}"')
     row = cursor.fetchone()
@@ -131,6 +132,7 @@ def api_pharmacy_login():
 
 @app.route('/api/v1/resources/doctor/patient', methods=['POST', 'GET'])
 def api_patient():
+    cursor = get_new_cursor()
     if request.method == 'POST':
         req_data = request.get_json()
         print(req_data)
@@ -171,6 +173,52 @@ def api_patient():
                 'age': row[1],
                 'name': row[2],
                 'contact': row[3],
+            })
+        return jsonify(result)
+
+
+@app.route('/api/v1/resources/common/drugs', methods=['POST', 'GET'])
+def api_drugs():
+    cursor = get_new_cursor()
+    if request.method == 'POST':
+        req_data = request.get_json()
+        print(req_data)
+
+        fields = ("drug_name", "class")
+        values = tuple([req_data[_] for _ in fields])
+        if None in values:
+            print('Null value found')
+            return "invalud data", 400
+
+        fields_str = ', '.join(fields)
+
+        query = f'INSERT INTO drugs ({fields_str}) VALUES {values}'
+        print(query)
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            print(e)
+            return "invalid data", 400
+        db.commit()
+        return "done", 200
+    else:
+        drug_id = request.args.get('drug_id')
+        query = f'SELECT drug_id, drug_name, class FROM drugs WHERE drug_id="{drug_id}"'
+        if not drug_id:
+            query = f'SELECT drug_id, drug_name, class FROM drugs'
+        print(query)
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            print(e)
+            return "Server Error", 500
+        data = cursor.fetchall()
+        result = []
+        for row in data:
+            result.append({
+                'drug_id': row[0],
+                'drug_name': row[1],
+                'class': row[2],
             })
         return jsonify(result)
 
