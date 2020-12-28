@@ -1,5 +1,6 @@
 import pymysql
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import os
 
 from dotenv import load_dotenv
@@ -23,6 +24,7 @@ data = cursor.fetchone()
 print("Database version : %s " % data)
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route("/")
@@ -35,6 +37,7 @@ def hello_world():
 def version():
     return "Version {}!".format(data)
 
+
 @app.route('/api/v1/resources/doctor/getPatient', methods=['POST'])
 def api_addPatient():
     if 'patientID' in request.args:
@@ -42,7 +45,21 @@ def api_addPatient():
     else:
         return "Error 404"
     patient = {"patientID": patientID}
-    return jsonify(patient) 
+    return jsonify(patient)
+
+
+@app.route('/api/v1/resources/common/getDepartment', methods=['GET'])
+def api_getDepartments():
+    cursor.execute('SELECT department_name, department_no FROM department')
+    data = cursor.fetchall()
+    result = []
+    for row in data:
+        result.append({
+            'department_name': row[0],
+            'department_no': row[1],
+        })
+    return jsonify(result)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
