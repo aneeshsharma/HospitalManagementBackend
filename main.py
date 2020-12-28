@@ -2,6 +2,7 @@ import pymysql
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
+import time
 
 from datetime import date
 
@@ -235,8 +236,10 @@ def api_treatment():
         data = req_data
 
         data['treatment_date'] = str(date.today())
+        data['treat_id'] = int(time.time() * 1000 -
+                               (int(time.time() / 100000)) * 100000 * 1000)
 
-        fields = ("patient_id", "doctor_id",
+        fields = ("treat_id", "patient_id", "doctor_id",
                   "treatment_date", "treatment_report")
         values = tuple([req_data[_] for _ in fields])
         if None in values:
@@ -248,16 +251,23 @@ def api_treatment():
         query = f'INSERT INTO treats ({fields_str}) VALUES {values}'
         print(query)
         try:
-            cursor.execute(query)
+            r = cursor.execute(query)
+            print(r)
         except Exception as e:
             print(e)
             return "invalid data", 400
-        db.commit()
-        return "done", 200
+        r = db.commit()
+        print(r)
+        return {'message': 'done', 'treat_id': data['treat_id']}, 200
     else:
         treat_id = request.args.get('treat_id')
-        query = f'SELECT patient_id, doctor_id, treat_id, treatment_date, treatment_report FROM treats WHERE treat_id="{treat_id}"'
-        if not treat_id:
+        patient_id = request.args.get('patient_id')
+        query = ''
+        if treat_id:
+            query = f'SELECT patient_id, doctor_id, treat_id, treatment_date, treatment_report FROM treats WHERE treat_id="{treat_id}"'
+        elif patient_id:
+            query = f'SELECT patient_id, doctor_id, treat_id, treatment_date, treatment_report FROM treats WHERE patient_id="{patient_id}"'
+        else:
             query = f'SELECT patient_id, doctor_id, treat_id, treatment_date, treatment_report FROM treats'
         print(query)
         try:
@@ -274,6 +284,69 @@ def api_treatment():
                 'treat_id': row[2],
                 'treatment_date': row[3],
                 'treatment_report': row[4],
+            })
+        return jsonify(result)
+
+
+@app.route('/api/v1/resources/doctor/prescription', methods=['POST', 'GET'])
+def api_prescription():
+    db, cursor = get_new_cursor()
+    if request.method == 'POST':
+        req_data = request.get_json()
+        print(req_data)
+
+        data = req_data
+
+        drugs = data['drugs']
+
+        for drug_id in drugs:
+            insert_data = {
+                'drug_id': drug_id,
+                'doctor_id': data['doctor_id'],
+                'patient_id': data['patient_id'],
+                'treat_id': data['treat_id']
+            }
+            fields = ("drug_id", "patient_id", "doctor_id",
+                      "treat_id")
+            values = tuple([insert_data[_] for _ in fields])
+            if None in values:
+                print('Null value found')
+                return "invalud data", 400
+
+            fields_str = ', '.join(fields)
+
+            query = f'INSERT INTO prescribed_by ({fields_str}) VALUES {values}'
+            print(query)
+            try:
+                r = cursor.execute(query)
+                print(r)
+            except Exception as e:
+                print(e)
+                return "invalid data", 400
+        db.commit()
+        return "done", 200
+    else:
+        treat_id = request.args.get('treat_id')
+        query = ''
+        if treat_id:
+            query = f'SELECT drug_id, doctor_id, patient_id, treat_id FROM prescribed_by WHERE treat_id="{treat_id}"'
+        else:
+            query = f'SELECT drug_id, doctor_id, patient_id, treat_id FROM prescribed_by'
+
+        print(query)
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            print(e)
+            return "Server Error", 500
+        data = cursor.fetchall()
+        result = []
+        for row in data:
+            result.append({
+                'drug_id': row[0],
+                'doctor_id': row[1],
+                'patient_id': row[2],
+                'treat_id': row[3],
             })
         return jsonify(result)
 
