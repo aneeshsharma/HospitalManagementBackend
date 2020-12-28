@@ -17,10 +17,10 @@ def get_new_cursor():
     db = pymysql.connect(DB_HOST, DB_USER,
                          DB_PASS, DB_NAME)
     cursor = db.cursor()
-    return cursor
+    return db, cursor
 
 
-cur = get_new_cursor()
+db_, cur = get_new_cursor()
 
 # execute SQL query using execute() method.
 cur.execute("SELECT VERSION()")
@@ -46,7 +46,7 @@ def version():
 
 @app.route('/api/v1/resources/common/getDepartment', methods=['GET'])
 def api_getDepartments():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     cursor.execute('SELECT department_name, department_no FROM department')
     data = cursor.fetchall()
     result = []
@@ -60,7 +60,7 @@ def api_getDepartments():
 
 @app.route('/api/v1/resources/doctor/sign-up', methods=['POST'])
 def api_doctor_sign_up():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     req_data = request.get_json()
     print(req_data)
 
@@ -84,7 +84,7 @@ def api_doctor_sign_up():
 
 @app.route('/api/v1/resources/pharmacy/sign-up', methods=['POST'])
 def api_pharmacy_sign_up():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     req_data = request.get_json()
     print(req_data)
 
@@ -108,7 +108,7 @@ def api_pharmacy_sign_up():
 
 @app.route('/api/v1/resources/doctor/login', methods=['GET'])
 def api_doctor_login():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     name = request.args.get('name')
     cursor.execute(f'SELECT doctor_id FROM doctor WHERE name="{name}"')
     row = cursor.fetchone()
@@ -120,7 +120,7 @@ def api_doctor_login():
 
 @app.route('/api/v1/resources/pharmacy/login', methods=['GET'])
 def api_pharmacy_login():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     name = request.args.get('name')
     cursor.execute(f'SELECT pharmacy_id FROM pharmacy WHERE name="{name}"')
     row = cursor.fetchone()
@@ -132,7 +132,7 @@ def api_pharmacy_login():
 
 @app.route('/api/v1/resources/doctor/patient', methods=['POST', 'GET'])
 def api_patient():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     if request.method == 'POST':
         req_data = request.get_json()
         print(req_data)
@@ -179,7 +179,7 @@ def api_patient():
 
 @app.route('/api/v1/resources/common/drugs', methods=['POST', 'GET'])
 def api_drugs():
-    cursor = get_new_cursor()
+    db, cursor = get_new_cursor()
     if request.method == 'POST':
         req_data = request.get_json()
         print(req_data)
