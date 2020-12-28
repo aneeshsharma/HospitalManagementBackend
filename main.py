@@ -61,5 +61,73 @@ def api_getDepartments():
     return jsonify(result)
 
 
+@app.route('/api/v1/resources/doctor/sign-up', methods=['POST'])
+def api_doctor_sign_up():
+    req_data = request.get_json()
+    print(req_data)
+    print(req_data.values())
+    fields = ("department_no", "name", "address", "position")
+    values = tuple([req_data[_] for _ in fields])
+    if None in values:
+        return "invalud data", 400
+
+    fields_str = ', '.join(fields)
+
+    query = f'INSERT INTO doctor ({fields_str}) VALUES {values}'
+    print(query)
+    try:
+        cursor.execute(query)
+    except Exception as e:
+        print(e)
+        return "invalid data", 400
+    db.commit()
+    return "done", 200
+
+
+@app.route('/api/v1/resources/pharmacy/sign-up', methods=['POST'])
+def api_pharmacy_sign_up():
+    req_data = request.get_json()
+    print(req_data)
+    print(req_data.values())
+    fields = ("department_no", "name", "contact")
+    values = tuple([req_data[_] for _ in fields])
+    if None in values:
+        return "invalud data", 400
+
+    fields_str = ', '.join(fields)
+
+    query = f'INSERT INTO pharmacy ({fields_str}) VALUES {values}'
+    print(query)
+    try:
+        cursor.execute(query)
+    except Exception as e:
+        print(e)
+        return "invalid data", 400
+    db.commit()
+    return "done", 200
+
+
+@app.route('/api/v1/resources/doctor/login', methods=['GET'])
+def api_doctor_login():
+    name = request.args.get('name')
+    cursor.execute(f'SELECT doctor_id FROM doctor WHERE name="{name}"')
+    row = cursor.fetchone()
+    result = {
+        'doctor_id': row[0],
+    }
+    return jsonify(result)
+
+
+@app.route('/api/v1/resources/pharmacy/login', methods=['GET'])
+def api_pharmacy_login():
+    name = request.args.get('name')
+    cursor.execute(f'SELECT pharmacy_id FROM pharmacy WHERE name="{name}"')
+    row = cursor.fetchone()
+    result = {
+        'pharmacy_id': row[0],
+    }
+    return jsonify(result)
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
