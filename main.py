@@ -65,7 +65,7 @@ def api_getDepartments():
 def api_doctor_sign_up():
     req_data = request.get_json()
     print(req_data)
-    print(req_data.values())
+
     fields = ("department_no", "name", "address", "position")
     values = tuple([req_data[_] for _ in fields])
     if None in values:
@@ -88,7 +88,7 @@ def api_doctor_sign_up():
 def api_pharmacy_sign_up():
     req_data = request.get_json()
     print(req_data)
-    print(req_data.values())
+
     fields = ("department_no", "name", "contact")
     values = tuple([req_data[_] for _ in fields])
     if None in values:
@@ -127,6 +127,52 @@ def api_pharmacy_login():
         'pharmacy_id': row[0],
     }
     return jsonify(result)
+
+
+@app.route('/api/v1/resources/doctor/patient', methods=['POST', 'GET'])
+def api_patient():
+    if request.method == 'POST':
+        req_data = request.get_json()
+        print(req_data)
+
+        fields = ("age", "name", "contact")
+        values = tuple([req_data[_] for _ in fields])
+        if None in values:
+            print('Null value found')
+            return "invalud data", 400
+
+        fields_str = ', '.join(fields)
+
+        query = f'INSERT INTO patient ({fields_str}) VALUES {values}'
+        print(query)
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            print(e)
+            return "invalid data", 400
+        db.commit()
+        return "done", 200
+    else:
+        patient_id = request.args.get('patient_id')
+        query = f'SELECT patient_id, age, name, contact FROM patient WHERE patient_id="{patient_id}"'
+        if not patient_id:
+            query = f'SELECT patient_id, age, name, contact FROM patient'
+        print(query)
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            print(e)
+            return "Server Error", 500
+        data = cursor.fetchall()
+        result = []
+        for row in data:
+            result.append({
+                'patient_id': row[0],
+                'age': row[1],
+                'name': row[2],
+                'contact': row[3],
+            })
+        return jsonify(result)
 
 
 if __name__ == "__main__":
